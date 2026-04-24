@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MHRD: Mental Health Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900 pb-20">
+    <div class="max-w-6xl mx-auto mt-10 p-8 bg-white rounded-lg shadow-lg">
+        <h2 class="text-3xl font-bold text-center text-indigo-700 mb-2">MHRD AI Dashboard</h2>
+        <p class="text-center text-gray-500 mb-8">Dual-Model Mental Health Risk & Treatment Predictor</p>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 border-r pr-6">
+                <form id="surveyForm" class="space-y-4 text-sm">
+                    <div><label class="font-semibold text-gray-700">Age</label><input type="number" id="Age" value="30" class="w-full mt-1 p-2 border rounded"></div>
+                    <div><label class="font-semibold text-gray-700">Gender</label><select id="Gender" class="w-full mt-1 p-2 border rounded"><option>Male</option><option>Female</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Family History</label><select id="Family_History" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Company Size</label><select id="Company_Size" class="w-full mt-1 p-2 border rounded"><option>26-100</option><option>100-500</option><option>More than 1000</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Tech Company</label><select id="Tech_Company" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Wellness Program</label><select id="Wellness_Program" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option><option>Don't know</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Anonymity Protected</label><select id="Anonymity_Protected" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option><option>Don't know</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Leave Difficulty</label><select id="Leave_Difficulty" class="w-full mt-1 p-2 border rounded"><option>Somewhat easy</option><option>Somewhat difficult</option><option>Very difficult</option><option>Don't know</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Benefits</label><select id="Benefits" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option><option>Don't know</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Care Options</label><select id="Care_Options" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option><option>Not sure</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Sought Treatment (Past)</label><select id="Target_Sought_Treatment" class="w-full mt-1 p-2 border rounded"><option>Yes</option><option>No</option></select></div>
+                    <div><label class="font-semibold text-gray-700">Current Work Interference</label><select id="Work_Interfere" class="w-full mt-1 p-2 border rounded"><option>Never</option><option>Rarely</option><option>Sometimes</option><option>Often</option></select></div>
+                    <div>
+                        <label class="font-semibold text-indigo-700">Survey Year</label>
+                        <select id="Survey_Year" class="w-full mt-1 p-2 border-2 border-indigo-300 rounded font-bold">
+                            <option value="Year_2014">2014 (Pre-Pandemic)</option>
+                            <option value="Year_2016">2016 (Pre-Pandemic)</option>
+                            <option value="Year_2020">2020 (Pandemic Peak)</option>
+                            <option value="Year_2021">2021 (Pandemic Recovery)</option>
+                        </select>
+                    </div>
+
+                    <button type="button" onclick="submitSurvey()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded hover:bg-indigo-700 shadow-lg mt-4">
+                        Run XAI Inference
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2 hidden" id="dashboardArea">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 rounded-lg shadow border-l-4 border-red-500 bg-gray-50">
+                        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider">Risk Prediction</h3>
+                        <div id="riskLabel" class="mt-1 text-xl font-bold text-gray-800"></div>
+                    </div>
+                    <div class="p-4 rounded-lg shadow border-l-4 border-blue-500 bg-gray-50">
+                        <h3 class="text-xs text-gray-500 font-bold uppercase tracking-wider">Treatment Prediction</h3>
+                        <div id="treatLabel" class="mt-1 text-xl font-bold text-gray-800"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow border">
+                        <h3 class="text-sm font-bold text-center text-gray-600 mb-2">Model Confidence</h3>
+                        <canvas id="confidenceChart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border">
+                        <h3 class="text-sm font-bold text-center text-gray-600 mb-2">Time Variance (Shockwave)</h3>
+                        <canvas id="temporalChart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border col-span-2">
+                        <h3 class="text-sm font-bold text-center text-gray-600 mb-2">SHAP Feature Importance</h3>
+                        <canvas id="shapChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let confChart = null;
+        let tempChart = null;
+        let shapChart = null;
+
+        async function submitSurvey() {
+            const payload = {
+                Age: parseInt(document.getElementById('Age').value),
+                Gender: document.getElementById('Gender').value,
+                Family_History: document.getElementById('Family_History').value,
+                Company_Size: document.getElementById('Company_Size').value,
+                Tech_Company: document.getElementById('Tech_Company').value,
+                Wellness_Program: document.getElementById('Wellness_Program').value,
+                Anonymity_Protected: document.getElementById('Anonymity_Protected').value,
+                Leave_Difficulty: document.getElementById('Leave_Difficulty').value,
+                Benefits: document.getElementById('Benefits').value,
+                Care_Options: document.getElementById('Care_Options').value,
+                Survey_Year: document.getElementById('Survey_Year').value,
+                Target_Sought_Treatment: document.getElementById('Target_Sought_Treatment').value,
+                Work_Interfere: document.getElementById('Work_Interfere').value,
+                Comments: ""
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                
+                document.getElementById('dashboardArea').classList.remove('hidden');
+                document.getElementById('riskLabel').innerText = `${data.risk_prediction} (${(data.risk_confidence * 100).toFixed(1)}%)`;
+                document.getElementById('treatLabel').innerText = `${data.treatment_prediction} (${(data.treatment_confidence * 100).toFixed(1)}%)`;
+
+                // CRITICAL: Destroy old charts so they can redraw
+                if(confChart) confChart.destroy();
+                if(tempChart) tempChart.destroy();
+                if(shapChart) shapChart.destroy();
+
+                // 1. Confidence Chart
+                confChart = new Chart(document.getElementById('confidenceChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['Risk Confidence', 'Treatment Confidence'],
+                        datasets: [{
+                            data: [data.risk_confidence * 100, data.treatment_confidence * 100],
+                            backgroundColor: ['#EF4444', '#3B82F6']
+                        }]
+                    }
+                });
+
+                // 2. Time Variance Chart (Dynamically Scaled)
+                const trendData = data.temporal_trend.probabilities.map(p => p * 100);
+                const minRisk = Math.min(...trendData);
+                const maxRisk = Math.max(...trendData);
+
+                tempChart = new Chart(document.getElementById('temporalChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.temporal_trend.years,
+                        datasets: [{
+                            label: 'Risk %',
+                            data: trendData,
+                            borderColor: '#8B5CF6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                            y: { 
+                                suggestedMin: Math.max(0, minRisk - 2), 
+                                suggestedMax: Math.min(100, maxRisk + 2)
+                            } 
+                        }
+                    }
+                });
+
+                // 3. SHAP Chart
+                shapChart = new Chart(document.getElementById('shapChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.top_shap.map(s => s.feature),
+                        datasets: [{
+                            label: 'Impact',
+                            data: data.top_shap.map(s => s.value),
+                            backgroundColor: data.top_shap.map(s => s.value > 0 ? '#EF4444' : '#10B981')
+                        }]
+                    },
+                    options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+                });
+
+            } catch (error) {
+                alert("Inference failed. Check console.");
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
