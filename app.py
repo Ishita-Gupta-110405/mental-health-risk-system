@@ -45,7 +45,7 @@ class SurveyData(BaseModel):
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html", context={"request": request})
 
 @app.post("/predict")
 async def predict(data: SurveyData):
