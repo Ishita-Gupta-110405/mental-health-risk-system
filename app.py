@@ -64,7 +64,6 @@ app.add_middleware(
 # ==============================
 # LOAD PRE-TRAINED MODELS & EXPLAINERS
 # ==============================
-# Dynamically get the absolute path of the directory where app.py lives
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 try:
@@ -141,7 +140,7 @@ def model_performance():
 
 @app.post("/predict")
 async def predict(request: Request):
-    # Manually read the JSON body to bypass strict FastAPI validation
+    # Bypass strict validation by manually parsing the JSON body
     data = await request.json()
     
     # Safely prepare the dataframe
