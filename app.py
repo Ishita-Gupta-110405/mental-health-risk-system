@@ -164,11 +164,16 @@ def predict(data: dict):
         risk_pred, risk_prob, treatment_pred, treatment_prob = 0, 0.0, 0, 0.0
 
     # Return stable global SHAP values to guarantee 100% frontend uptime
+    # Return stable global SHAP values to guarantee 100% frontend uptime
     return {
         "prediction": risk_pred,             
         "confidence": risk_prob,             
         "risk_prediction": risk_pred,
         "risk_confidence": risk_prob,
+        "probabilities": {                     # <-- The frontend JS needs this exact key
+            "risk": risk_prob,
+            "treatment": treatment_prob
+        },
         "risk_label": "High Work Interference Risk" if risk_pred == 1 else "Low Work Interference Risk",
         "treatment_prediction": treatment_pred,
         "treatment_label": "Likely to Seek Treatment" if treatment_pred == 1 else "Unlikely to Seek Treatment",
