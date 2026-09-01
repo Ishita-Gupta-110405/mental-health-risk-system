@@ -228,7 +228,7 @@ def predict(data: dict):
         # Filter strictly to years <= the user's dropdown selection
         filtered_years = {}
         for y_str, v in raw_years.items():
-            if int(y_str) <= max_year:
+            if y_str.isdigit() and int(y_str) <= max_year:
                 filtered_years[y_str] = v
                 
         # Sort chronologically
@@ -238,8 +238,8 @@ def predict(data: dict):
         print(f"SHAP error: {e}")
 
     return {
-        "prediction": risk_pred,
-        "confidence": risk_prob,
+        "risk_prediction": risk_pred,
+        "risk_confidence": risk_prob,
         "risk_label": "High Work Interference Risk" if risk_pred == 1 else "Low Work Interference Risk",
         "treatment_prediction": treatment_pred,
         "treatment_label": "Likely to Seek Treatment" if treatment_pred == 1 else "Unlikely to Seek Treatment",
